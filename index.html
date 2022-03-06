@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="https://pixijs.download/release/pixi.js"></script>
+    <style type="text/css">
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+  </body>
+  <script>
+    const debug = (obj) => {
+      console.log(obj);
+      return obj;
+    };
+
+    const urlParameterParse = (url) => {
+      const urlobj = new URL(url);
+      const params = urlobj.searchParams;
+      let ret = {};
+      params.forEach((v,k)=>{ret[k]=v})
+      return ret;
+    };
+
+    // Return prime numbers between 0 and limit
+    const sieveAtkin = (limit) => {
+      const limitSqrt = Math.sqrt(limit);
+      const ns = Array.from({length: limitSqrt}, (_, i) => i + 1)
+      const n_nn = ns.map((n) => {return {n: n, nn: n*n}});
+      let sieve = (() => {
+        let ret = []; ret[2] = true; ret[3] = true;
+        ns.map((x) => {
+          if( x >= limitSqrt ) return;
+          const xx = n_nn[x-1].nn
+          ns.map((y) => {
+            if( y >= limitSqrt ) return;
+            const yy = n_nn[y-1].nn
+            if( xx + yy >= limit ) return;
+
+            const n1 = (4 * xx) + (yy);
+            const n2 = (3 * xx) + (yy);
+            const n3 = (3 * xx) - (yy);
+            if(n1 <= limit && (n1 % 12 == 1 || n1 % 12 == 5)) ret[n1] = !ret[n1];
+            if(n2 <= limit && (n2 % 12 == 7)) ret[n2] = !ret[n2];
+            if(x > y && n3 <= limit && (n3 % 12 == 11)) ret[n3] = !ret[n3];
+          });
+        });
+        return ret;
+      })();
+      for(n = 5; n <= limitSqrt; n++){
+        if(sieve[n]){
+          x = n*n;
+          for(var i=x; i<=limit; i+=x) sieve[i] = false;
+        }
+      }
+      return sieve.reduce((acc,v,i) => v ? acc.concat([i]) : acc, []);
+    };
+
+    const parameters = urlParameterParse(window.location.href);
+
+    const posCalc = (r, ang) => {
+      //const rad = Math.PI * ang / 180;
+      const rad = ang;
+      const x = r * Math.cos(rad);
+      const y = r * Math.sin(rad);
+      return [x, y];
+    };
+
+    const app = new PIXI.Application({
+      autoResize: true,
+      resolution: devicePixelRatio
+    });
+
+    document.body.appendChild(app.view);
+
+    const graphics = new PIXI.Graphics();
+    app.stage.addChild(graphics);
+    const primes = sieveAtkin(parseInt(parameters.psize) || 10000);
+    const primesPos = primes.map((v) => posCalc(v,v));
+
+    const updateSpiral = (scale) => {
+      graphics.clear();
+      primesPos.forEach((v) => {
+        graphics.lineStyle(0);
+        graphics.beginFill(0x4AF626, 1);
+        graphics.drawCircle((v[0] / scale), (v[1] / scale), 1);
+        graphics.endFill();
+      });
+    };
+
+
+    let tick = parseFloat(parameters.tick) || 0.001;
+    let add = parseFloat(parameters.add) || 0.01;
+    let stop = parseInt(parameters.stop) || 30;
+    app.ticker.add(() => {
+      if( (add < 0 && tick <= stop) || (add > 0 && tick >= stop) ) return;
+
+      updateSpiral(tick);
+      tick += add;
+    });
+
+    const resize = () => {
+      app.renderer.resize(window.innerWidth, window.innerHeight);
+      graphics.position.set(app.screen.width / 2, app.screen.height /2);
+    };
+    
+    // resize event
+    window.addEventListener('resize', resize);
+    resize();
+  </script>
+</html>
